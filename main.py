@@ -8,6 +8,7 @@ import chainer
 import itertools
 train, test = chainer.datasets.get_mnist()
 input_data, label_data = train._datasets
+input_test, label_test = test._datasets
 
 def to_plot_img(imgs, n, sz):
     imgs = np.reshape(imgs, (n, sz, sz))
@@ -45,14 +46,15 @@ sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
 #%% test
-i = int(np.random.uniform(len(input_data)))
-imgs = sess.run(output, feed_dict={input: np.expand_dims(input_data[i], 0)})
-pylab.subplot(1, 2, 1)
-pylab.imshow(np.reshape(imgs[0], (28, 28)))
+for _ in range(50):
+    i = int(np.random.uniform(len(input_test)))
+    imgs = sess.run(output, feed_dict={input: np.expand_dims(input_test[i], 0)})
+    pylab.subplot(1, 2, 1)
+    pylab.imshow(np.reshape(imgs[0], (28, 28)))
 
-pylab.subplot(1, 2, 2)
-pylab.imshow(np.reshape(input_data[i], (28, 28)))
-pylab.show()
+    pylab.subplot(1, 2, 2)
+    pylab.imshow(np.reshape(input_test[i], (28, 28)))
+    pylab.show()
 
 #%% train
 batch_n = 4 ** 2
