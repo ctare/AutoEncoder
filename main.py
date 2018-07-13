@@ -19,19 +19,19 @@ def to_plot_img(imgs, n, sz):
 #%%
 input = tf.placeholder(tf.float32, [None, 784])
 reshaped_input = tf.reshape(input, [-1, 28, 28, 1])
-conv = tf.contrib.slim.conv2d(reshaped_input, 32, 7, padding="VALID")
-conv = tf.contrib.slim.conv2d(conv, 16, 3, padding="VALID")
-conv = tf.contrib.slim.conv2d(conv, 4, 3, padding="VALID")
-encoder = tf.contrib.slim.conv2d(conv, 1, 3, padding="VALID")
+conv = tf.contrib.slim.conv2d(reshaped_input, 32, 7, padding="SAME")
+pool = tf.contrib.slim.max_pool2d(conv, 2, padding="SAME")
+conv = tf.contrib.slim.conv2d(pool, 16, 3, padding="SAME")
+pool = tf.contrib.slim.max_pool2d(conv, 2, padding="SAME")
+encoder = tf.contrib.slim.conv2d(pool, 1, 3, padding="VALID")
 
 deconv = tf.contrib.slim.conv2d_transpose(encoder, 4, 3, padding="VALID")
-deconv = tf.contrib.slim.conv2d_transpose(deconv, 16, 3, padding="VALID")
-deconv = tf.contrib.slim.conv2d_transpose(deconv, 32, 3, padding="VALID")
-decoder = tf.contrib.slim.conv2d_transpose(deconv, 1, 7, padding="VALID")
+upsample = tf.image.resize_nearest_neighbor(deconv, (14, 14))
+deconv = tf.contrib.slim.conv2d_transpose(upsample, 16, 3, padding="SAME")
+upsample = tf.image.resize_nearest_neighbor(deconv, (28, 28))
+deconv = tf.contrib.slim.conv2d_transpose(upsample, 32, 7, padding="SAME")
+decoder = tf.contrib.slim.conv2d_transpose(deconv, 1, 3, padding="SAME")
 output = tf.contrib.slim.flatten(decoder)
-# fc = tf.contrib.slim.fully_connected(reshaped_input, 300, activation_fn=tf.nn.sigmoid)
-# fc = tf.contrib.slim.dropout(h, 0.5)
-# output = tf.contrib.slim.fully_connected(h, 784, activation_fn=tf.nn.relu)
 
 with tf.name_scope("optimize"):
     # loss = tf.nn.l2_loss(output - input)
@@ -45,7 +45,7 @@ sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
 #%% test
-i = 3
+i = int(np.random.uniform(len(input_data)))
 imgs = sess.run(output, feed_dict={input: np.expand_dims(input_data[i], 0)})
 pylab.subplot(1, 2, 1)
 pylab.imshow(np.reshape(imgs[0], (28, 28)))
@@ -56,14 +56,18 @@ pylab.show()
 
 #%% train
 batch_n = 4 ** 2
-ind = input_data[100:batch_n + 100]
-for i in range(300):
-    _, imgs, lossv = sess.run([optimizer, output, loss], feed_dict={input: ind})
-    pylab.subplot(1, 2, 1)
+for i in range(100):
+    target = int(np.random.uniform(len(input_data) - 100))
+    ind = input_data[target:batch_n + target]
+    _, imgs, encode_images, lossv = sess.run([optimizer, output, encoder, loss], feed_dict={input: ind})
+    pylab.subplot(1, 3, 1)
     pylab.title("epoch: {}, loss: {:.2f}".format(i, lossv))
     pylab.axis("off")
     pylab.imshow(to_plot_img(imgs, batch_n, 28))
-    pylab.subplot(1, 2, 2)
+    pylab.subplot(1, 3, 2)
     pylab.axis("off")
     pylab.imshow(to_plot_img(ind, batch_n, 28))
+    pylab.subplot(1, 3, 3)
+    pylab.axis("off")
+    pylab.imshow(to_plot_img(encode_images, batch_n, 5))
     pylab.show()
