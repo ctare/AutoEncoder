@@ -30,25 +30,16 @@ with tf.name_scope("optimize"):
     optimizer = tf.train.AdamOptimizer().minimize(loss)
 
 #%%
-# h2 = tf.contrib.slim.fully_connected(h, 100, activation_fn=tf.nn.sigmoid)
-# h2 = tf.contrib.slim.dropout(h2, 0.5)
-# output2 = tf.contrib.slim.fully_connected(h, 300, activation_fn=tf.nn.relu)
-#
-# with tf.name_scope("optimize2"):
-#     loss2 = tf.losses.mean_squared_error(output2, h)
-#     optimizer2 = tf.train.AdamOptimizer().minimize(loss2)
-
-#%%
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
 #%% test
 i = 3
 imgs = sess.run(output, feed_dict={input: np.expand_dims(input_data[i], 0)})
-pylab.subplot(2, 1, 1)
+pylab.subplot(1, 2, 1)
 pylab.imshow(np.reshape(imgs[0], (28, 28)))
 
-pylab.subplot(2, 1, 2)
+pylab.subplot(1, 2, 2)
 pylab.imshow(np.reshape(input_data[i], (28, 28)))
 pylab.show()
 
@@ -56,7 +47,6 @@ pylab.show()
 batch_n = 4 ** 2
 ind = input_data[100:batch_n + 100]
 for i in range(300):
-    # _, _, imgs, lossv, lossv2 = sess.run([optimizer, optimizer2, output, loss, loss2], feed_dict={input: ind})
     _, imgs, lossv = sess.run([optimizer, output, loss], feed_dict={input: ind})
     pylab.subplot(1, 2, 1)
     pylab.title("epoch: {}, loss: {:.2f}".format(i, lossv))
@@ -66,20 +56,3 @@ for i in range(300):
     pylab.axis("off")
     pylab.imshow(to_plot_img(ind, batch_n, 28))
     pylab.show()
-
-#%%
-
-
-
-# batch_n = 64
-# for x in zip(*[iter(input_data)]* batch_n)[0]:
-#     sess.run(optimizer, feed_dict={input: x})
-
-# i = 0
-# imgs = sess.run(output, feed_dict={input: np.expand_dims(input_data[i], 0)})
-# pylab.subplot(2, 1, 1)
-# pylab.imshow(np.reshape(imgs[0], (28, 28)))
-#
-# pylab.subplot(2, 1, 2)
-# pylab.imshow(np.reshape(input_data[i], (28, 28)))
-# pylab.show()
