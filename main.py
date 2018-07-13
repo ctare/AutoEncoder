@@ -18,9 +18,20 @@ def to_plot_img(imgs, n, sz):
 
 #%%
 input = tf.placeholder(tf.float32, [None, 784])
-h = tf.contrib.slim.fully_connected(input, 300, activation_fn=tf.nn.sigmoid)
-h = tf.contrib.slim.dropout(h, 0.5)
-output = tf.contrib.slim.fully_connected(h, 784, activation_fn=tf.nn.relu)
+reshaped_input = tf.reshape(input, [-1, 28, 28, 1])
+conv = tf.contrib.slim.conv2d(reshaped_input, 32, 7, padding="VALID")
+conv = tf.contrib.slim.conv2d(conv, 16, 3, padding="VALID")
+conv = tf.contrib.slim.conv2d(conv, 4, 3, padding="VALID")
+encoder = tf.contrib.slim.conv2d(conv, 1, 3, padding="VALID")
+
+deconv = tf.contrib.slim.conv2d_transpose(encoder, 4, 3, padding="VALID")
+deconv = tf.contrib.slim.conv2d_transpose(deconv, 16, 3, padding="VALID")
+deconv = tf.contrib.slim.conv2d_transpose(deconv, 32, 3, padding="VALID")
+decoder = tf.contrib.slim.conv2d_transpose(deconv, 1, 7, padding="VALID")
+output = tf.contrib.slim.flatten(decoder)
+# fc = tf.contrib.slim.fully_connected(reshaped_input, 300, activation_fn=tf.nn.sigmoid)
+# fc = tf.contrib.slim.dropout(h, 0.5)
+# output = tf.contrib.slim.fully_connected(h, 784, activation_fn=tf.nn.relu)
 
 with tf.name_scope("optimize"):
     # loss = tf.nn.l2_loss(output - input)
