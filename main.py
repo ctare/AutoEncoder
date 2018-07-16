@@ -18,20 +18,31 @@ def to_plot_img(imgs, n, sz):
 
 #%%
 input = tf.placeholder(tf.float32, [None, 784])
-h = tf.contrib.slim.fully_connected(input, 300, activation_fn=tf.nn.sigmoid)
+h = tf.contrib.slim.fully_connected(input, 300)
 h = tf.contrib.slim.dropout(h, 0.5)
-output = tf.contrib.slim.fully_connected(h, 784, activation_fn=tf.nn.relu)
+
+μ, log_σ_2 = [tf.contrib.slim.fully_connected(h, 100, activation_fn=None) for _ in range(2)]
+z = tf.distributions.Normal(μ, tf.exp(log_σ_2)).sample()
+
+h = tf.contrib.slim.fully_connected(z, 300)
+output = tf.contrib.slim.fully_connected(h, 784, activation_fn=None)
+
 
 with tf.name_scope("optimize"):
-    # loss = tf.nn.l2_loss(output - input)
-    # loss = tf.losses.cosine_distance(tf.nn.l2_normalize(input, 1), tf.nn.l2_normalize(output, 1), axis=1)
-    # loss = tf.keras.backend.binary_crossentropy(input, output)
-    loss = tf.losses.mean_squared_error(input, output)
+    with tf.name_scope("loss"):
+        kl_divergence = tf.reduce_mean(tf.reduce_sum(1 - tf.exp(log_σ_2) - μ ** 2 + log_σ_2, axis=1) / -2)
+        bernoulli = tf.distributions.Bernoulli(output)
+        reconstruction_error = tf.reduce_mean(tf.reduce_sum(bernoulli.log_prob(input), axis=1))
+
+        loss = kl_divergence - reconstruction_error
+
     optimizer = tf.train.AdamOptimizer().minimize(loss)
 
 #%%
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
+
+tf.summary.FileWriter("logs", sess.graph)
 
 #%% test
 i = 3
@@ -46,12 +57,12 @@ pylab.show()
 #%% train
 batch_n = 4 ** 2
 ind = input_data[100:batch_n + 100]
-for i in range(300):
+for i in range(400):
     _, imgs, lossv = sess.run([optimizer, output, loss], feed_dict={input: ind})
     pylab.subplot(1, 2, 1)
     pylab.title("epoch: {}, loss: {:.2f}".format(i, lossv))
     pylab.axis("off")
-    pylab.imshow(to_plot_img(imgs, batch_n, 28))
+    pylab.imshow(to_plot_img(chainer.functions.sigmoid(imgs.astype(np.float32)).array, batch_n, 28))
     pylab.subplot(1, 2, 2)
     pylab.axis("off")
     pylab.imshow(to_plot_img(ind, batch_n, 28))
