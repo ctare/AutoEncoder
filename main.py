@@ -58,7 +58,7 @@ for _ in range(50):
 
 #%% train
 batch_n = 4 ** 2
-for i in range(100):
+for i in range(300):
     target = int(np.random.uniform(len(input_data) - 100))
     ind = input_data[target:batch_n + target]
     _, imgs, encode_images, lossv = sess.run([optimizer, output, encoder, loss], feed_dict={input: ind})
